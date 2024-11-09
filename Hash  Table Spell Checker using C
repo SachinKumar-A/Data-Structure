@@ -1,0 +1,131 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <ctype.h>
+
+#define TABLE_SIZE 1000
+
+typedef struct Node {
+    char *word;
+    struct Node *next;
+} Node;
+
+typedef struct HashTable {
+    Node **table;
+} HashTable;
+
+unsigned int hash(const char *word) {
+    unsigned int hash = 0;
+    while (*word) {
+        hash = (hash << 5) + tolower(*word++);
+    }
+    return hash % TABLE_SIZE;
+}
+
+HashTable* createHashTable() {
+    HashTable *hashTable = (HashTable *)malloc(sizeof(HashTable));
+    hashTable->table = (Node **)malloc(TABLE_SIZE * sizeof(Node *));
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        hashTable->table[i] = NULL;
+    }
+
+    return hashTable;
+}
+
+void insert(HashTable *hashTable, const char *word) {
+    unsigned int index = hash(word);
+    Node *newNode = (Node *)malloc(sizeof(Node));
+    newNode->word = strdup(word);
+    newNode->next = hashTable->table[index];
+    hashTable->table[index] = newNode;
+}
+
+int check(HashTable *hashTable, const char *word) {
+    unsigned int index = hash(word);
+    Node *current = hashTable->table[index];
+    while (current) {
+        if (strcasecmp(current->word, word) == 0) {
+            return 1; // Word found
+        }
+        current = current->next;
+    }
+    return 0; // Word not found
+}
+
+void display(HashTable *hashTable) {
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        Node *current = hashTable->table[i];
+        while (current) {
+            printf("%s\n", current->word);
+            current = current->next;
+        }
+
+    }
+}
+
+void freeHashTable(HashTable *hashTable) {
+    for (int i = 0; i < TABLE_SIZE; i++) {
+        Node *current = hashTable->table[i];
+        while (current) {
+            Node *temp = current;
+            current = current->next;
+            free(temp->word);
+            free(temp);
+        }
+    }
+    free(hashTable->table);
+    free(hashTable);
+}
+
+
+
+void menu() {
+    printf("Spell Checker Menu:\n");
+    printf("1. Add word to dictionary\n");
+    printf("2. Check word spelling\n");
+    printf("3. Display all words in dictionary\n");
+    printf("4. Exit\n");
+}
+
+int main() {
+    HashTable *hashTable = createHashTable();
+    int choice;
+
+    char word[100];
+    char filename[100];
+
+    while (1) {
+        menu();
+        printf("Enter your choice: ");
+        scanf("%d", &choice);
+        switch (choice) {
+            case 1:
+                printf("Enter word to add: ");
+                scanf("%s", word);
+                insert(hashTable, word);
+                printf("Word added.\n");
+                break;
+            case 2:
+                printf("Enter word to check: ");
+                scanf("%s", word);
+                if (check(hashTable, word)) {
+                    printf("'%s' is spelled correctly.\n", word);
+                } else {
+                    printf("'%s' is misspelled.\n", word);
+                }
+                break;
+            case 3:
+                printf("Words in dictionary:\n");
+                display(hashTable);
+                break;
+            
+            case 4:
+                freeHashTable(hashTable);
+                printf("Exiting.\n");
+                return 0;
+            default:
+                printf("Invalid choice. Please try again.\n");
+        }
+    }
+    return 0;
+}
